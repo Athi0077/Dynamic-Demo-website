@@ -1,6 +1,7 @@
 // Centralized API Client with JWT Bearer Token Support, Silent 401 Handling, and Error Fallback
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const rawApiUrl = (import.meta.env.VITE_API_URL || 'https://dynamic-demo-website.onrender.com/api').trim().replace(/\/+$/, '');
+const API_BASE_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
 
 /**
  * Retrieves the stored JWT token
