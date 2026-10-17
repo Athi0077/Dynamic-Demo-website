@@ -199,9 +199,9 @@ export const EasyFloatingEditor = ({
   // CONTAINER STYLES: DOCKED VS FLOATING
   const containerClasses = isDocked
     ? 'fixed top-[49px] right-0 bottom-0 z-40 w-full sm:w-[420px] bg-white border-l border-slate-200/90 shadow-2xl flex flex-col h-[calc(100vh-49px)] animate-in slide-in-from-right duration-200'
-    : `fixed bottom-3 sm:bottom-6 ${
-        floatPosition === 'right' ? 'right-2 sm:right-6' : 'left-2 sm:left-6'
-      } z-40 w-[calc(100vw-1rem)] sm:w-[410px] bg-white/98 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[75vh] sm:max-h-[82vh] animate-in slide-in-from-bottom-2 duration-200`;
+    : `fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 sm:translate-x-0 ${
+        floatPosition === 'right' ? 'sm:left-auto sm:right-6' : 'sm:right-auto sm:left-6'
+      } z-40 w-[calc(100vw-1.25rem)] sm:w-[410px] max-w-[430px] bg-white/98 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[72vh] sm:max-h-[82vh] animate-in slide-in-from-bottom-2 duration-200`;
 
   return (
     <>
@@ -216,12 +216,12 @@ export const EasyFloatingEditor = ({
             <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
               <Sparkles size={13} />
             </div>
-            <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-extrabold text-white truncate">
+            <div className="min-w-0 pr-1">
+              <h3 className="text-xs sm:text-sm font-extrabold text-white truncate max-w-[110px] sm:max-w-[180px]">
                 {section.name}
               </h3>
-              <p className="text-[10px] text-slate-400 capitalize">
-                Section #{index + 1} • {section.type}
+              <p className="text-[10px] text-slate-400 capitalize truncate">
+                Section #{index + 1}
               </p>
             </div>
           </div>
@@ -254,11 +254,11 @@ export const EasyFloatingEditor = ({
               </button>
             )}
 
-            {/* Dock to Sidebar Toggle */}
+            {/* Dock to Sidebar Toggle (Desktop only) */}
             <button
               type="button"
               onClick={() => setIsDocked(!isDocked)}
-              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+              className={`hidden sm:inline-flex p-1.5 rounded-lg transition-colors cursor-pointer ${
                 isDocked
                   ? 'bg-indigo-600 text-white'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
@@ -291,31 +291,31 @@ export const EasyFloatingEditor = ({
         </div>
 
         {/* Editor Navigation Tabs */}
-        <div className="flex items-center border-b border-slate-200 bg-slate-50/90 p-1.5 gap-1 shrink-0">
+        <div className="flex items-center border-b border-slate-200 bg-slate-50/90 p-1 sm:p-1.5 gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('text')}
-            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
               activeTab === 'text'
                 ? 'bg-white text-indigo-600 shadow-2xs font-extrabold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Type size={13} />
+            <Type size={12} />
             <span>Texts</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('style')}
-            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
               activeTab === 'style'
                 ? 'bg-white text-indigo-600 shadow-2xs font-extrabold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Palette size={13} />
-            <span>Colors & Style</span>
+            <Palette size={12} />
+            <span>Style</span>
           </button>
 
           {hasImage && (
@@ -673,32 +673,32 @@ export const EasyFloatingEditor = ({
         </div>
 
         {/* Editor Modal Footer */}
-        <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
-          <div>
+        <div className="p-2.5 sm:p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs shrink-0 gap-2">
+          <div className="min-w-0">
             {isSavingDraft ? (
-              <span className="text-indigo-600 font-semibold flex items-center gap-1">
-                <Loader2 size={11} className="animate-spin" />
+              <span className="text-indigo-600 font-semibold flex items-center gap-1 text-[11px] truncate">
+                <Loader2 size={11} className="animate-spin shrink-0" />
                 <span>Saving...</span>
               </span>
             ) : hasUnsavedChanges ? (
-              <span className="text-amber-600 font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-amber-600 font-semibold flex items-center gap-1 text-[11px] truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
                 <span>Auto-saving</span>
               </span>
             ) : (
-              <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                <Check size={12} />
+              <span className="text-emerald-600 font-semibold flex items-center gap-1 text-[11px] truncate">
+                <Check size={12} className="shrink-0" />
                 <span>Saved</span>
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={() => saveDraft(false)}
               disabled={isSavingDraft}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-[11px] sm:text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
               title="Save draft to MongoDB"
             >
               <Save size={12} />
@@ -709,7 +709,7 @@ export const EasyFloatingEditor = ({
               type="button"
               onClick={publishWebsite}
               disabled={isPublishing}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] sm:text-xs font-bold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
               title="Publish changes live"
             >
               <UploadCloud size={12} />
@@ -719,7 +719,7 @@ export const EasyFloatingEditor = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-[11px] sm:text-xs font-bold transition-colors cursor-pointer"
             >
               Done
             </button>
