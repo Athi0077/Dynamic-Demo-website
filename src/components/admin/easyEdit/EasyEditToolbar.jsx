@@ -36,22 +36,22 @@ export const EasyEditToolbar = ({
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md text-white border-b border-slate-800 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 shadow-md">
+      <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md text-white border-b border-slate-800 px-2.5 sm:px-4 py-2 flex items-center justify-between gap-1.5 sm:gap-2 shadow-md w-full max-w-full overflow-hidden">
         {/* Left: Back & Easy Edit Badge */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <Link
             to="/admin/dashboard"
-            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="p-1 sm:p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
             title="Back to Admin Dashboard"
           >
             <ArrowLeft size={16} />
           </Link>
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
               N
             </span>
-            <span className="text-xs sm:text-sm font-extrabold tracking-wide text-white hidden xs:inline">
+            <span className="text-xs sm:text-sm font-extrabold tracking-wide text-white hidden md:inline">
               NOVA Easy Edit
             </span>
             <span
@@ -67,52 +67,52 @@ export const EasyEditToolbar = ({
         </div>
 
         {/* Center: Mode Switcher (Edit vs Browse) */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           <div className="flex items-center bg-slate-800 p-0.5 rounded-xl border border-slate-700 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setIsEditMode(true)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 isEditMode
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-400 hover:text-white'
               }`}
               title="Edit sections and customize inline"
             >
-              <MousePointerClick size={13} />
+              <MousePointerClick size={12} />
               <span className="text-[11px] sm:text-xs">Edit</span>
             </button>
 
             <button
               type="button"
               onClick={() => setIsEditMode(false)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                 !isEditMode
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-400 hover:text-white'
               }`}
               title="Browse website as a visitor"
             >
-              <Eye size={13} />
+              <Eye size={12} />
               <span className="text-[11px] sm:text-xs">Browse</span>
             </button>
           </div>
+        </div>
 
+        {/* Right: Add Section, Save Draft, Preview & Publish */}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Add Section Button */}
           <button
             type="button"
             onClick={onOpenAddModal}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700 cursor-pointer"
+            className="inline-flex items-center gap-1 p-1 sm:px-2 sm:py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700 cursor-pointer"
             title="Add a new section"
           >
             <Plus size={14} className="text-indigo-400" />
-            <span className="hidden md:inline text-xs">Add Section</span>
+            <span className="hidden lg:inline text-xs">Add Section</span>
           </button>
-        </div>
 
-        {/* Right: Save Draft, Preview & Publish */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Auto-save Status Pill */}
+          {/* Auto-save Status Pill (Desktop only) */}
           <div className="hidden lg:flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60">
             {isSavingDraft ? (
               <span className="text-indigo-400 flex items-center gap-1 font-semibold">
@@ -132,34 +132,24 @@ export const EasyEditToolbar = ({
             )}
           </div>
 
-          {/* Save Draft Button */}
+          {/* Save Draft Button (Hidden on mobile since auto-save handles it) */}
           <button
             type="button"
             onClick={() => saveDraft(false)}
             disabled={isSavingDraft}
-            className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700 cursor-pointer disabled:opacity-50"
+            className="hidden sm:inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700 cursor-pointer disabled:opacity-50"
             title="Save draft"
           >
             <Save size={13} />
-            <span className="hidden sm:inline text-xs">Save</span>
+            <span className="hidden md:inline text-xs">Save</span>
           </button>
 
-          {/* Switch to Advanced 3-Column Editor */}
-          <Link
-            to="/admin/editor"
-            className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors border border-slate-700"
-            title="Switch to 3-column builder"
-          >
-            <Sliders size={13} />
-            <span>Builder</span>
-          </Link>
-
-          {/* View Live Storefront */}
+          {/* View Live Storefront (Hidden on mobile) */}
           <Link
             to="/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 p-1.5 sm:px-2 sm:py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors border border-slate-700"
+            className="hidden sm:inline-flex items-center gap-1 p-1.5 sm:px-2 sm:py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors border border-slate-700"
             title="View live website"
           >
             <ExternalLink size={13} />
@@ -169,11 +159,11 @@ export const EasyEditToolbar = ({
           <button
             type="button"
             onClick={openPublishModal}
-            className="inline-flex items-center gap-1 px-3 sm:px-3.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/25 cursor-pointer active:scale-98"
+            className="inline-flex items-center gap-1 px-2.5 sm:px-3.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/25 cursor-pointer active:scale-98"
             title="Publish changes to live storefront"
           >
             <UploadCloud size={13} />
-            <span className="text-xs">Publish</span>
+            <span className="text-[11px] sm:text-xs">Publish</span>
           </button>
         </div>
       </header>

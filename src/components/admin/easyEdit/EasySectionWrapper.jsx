@@ -84,7 +84,7 @@ export const EasySectionWrapper = ({
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onSelect(section.id)}
       onDoubleClick={handleContainerDoubleClick}
-      className={`relative transition-all duration-200 group ${
+      className={`relative w-full max-w-full overflow-x-clip transition-all duration-200 group ${
         isHidden ? 'opacity-40 grayscale-75' : ''
       }`}
     >
@@ -92,19 +92,19 @@ export const EasySectionWrapper = ({
       <div
         className={`absolute inset-0 pointer-events-none transition-all duration-200 z-30 ${
           isSelected
-            ? 'ring-4 ring-indigo-600 ring-offset-2 ring-offset-white border-2 border-indigo-500 shadow-xl'
+            ? 'border-2 sm:border-3 border-indigo-600 shadow-inner'
             : isHovered
-            ? 'ring-2 ring-indigo-400/80 ring-offset-1 border-2 border-dashed border-indigo-400 shadow-sm'
+            ? 'border-2 border-dashed border-indigo-400'
             : ''
         }`}
       >
         {/* Corner Indicator Dots when Selected */}
         {isSelected && (
           <>
-            <span className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-indigo-600 rounded-full border-2 border-white shadow-xs" />
-            <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-indigo-600 rounded-full border-2 border-white shadow-xs" />
-            <span className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-indigo-600 rounded-full border-2 border-white shadow-xs" />
-            <span className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-indigo-600 rounded-full border-2 border-white shadow-xs" />
+            <span className="absolute top-1 left-1 w-2.5 h-2.5 bg-indigo-600 rounded-full border border-white shadow-xs" />
+            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-600 rounded-full border border-white shadow-xs" />
+            <span className="absolute bottom-1 left-1 w-2.5 h-2.5 bg-indigo-600 rounded-full border border-white shadow-xs" />
+            <span className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-indigo-600 rounded-full border border-white shadow-xs" />
           </>
         )}
       </div>

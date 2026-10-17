@@ -201,7 +201,7 @@ export const EasyFloatingEditor = ({
     ? 'fixed top-[49px] right-0 bottom-0 z-40 w-full sm:w-[420px] bg-white border-l border-slate-200/90 shadow-2xl flex flex-col h-[calc(100vh-49px)] animate-in slide-in-from-right duration-200'
     : `fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 sm:translate-x-0 ${
         floatPosition === 'right' ? 'sm:left-auto sm:right-6' : 'sm:right-auto sm:left-6'
-      } z-40 w-[calc(100vw-1.25rem)] sm:w-[410px] max-w-[430px] bg-white/98 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[72vh] sm:max-h-[82vh] animate-in slide-in-from-bottom-2 duration-200`;
+      } z-40 w-[calc(100%-1.25rem)] sm:w-[410px] max-w-[430px] bg-white/98 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[72vh] sm:max-h-[82vh] animate-in slide-in-from-bottom-2 duration-200`;
 
   return (
     <>

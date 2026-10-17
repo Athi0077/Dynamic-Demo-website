@@ -75,7 +75,7 @@ export const EasyEdit = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-indigo-600 selection:text-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-indigo-600 selection:text-white">
       {/* 1. TOP EASY EDIT TOOLBAR */}
       <EasyEditToolbar
         isEditMode={isEditMode}
@@ -87,7 +87,7 @@ export const EasyEdit = () => {
       <Navbar config={siteConfig.navbar} isEditor={true} />
 
       {/* 3. DYNAMIC HOMEPAGE SECTIONS WRAPPED FOR IN-PAGE EDITING */}
-      <main className="flex-grow">
+      <main className="flex-grow w-full max-w-full overflow-x-hidden">
         {sections.map((section, idx) => {
           const SectionComponent = componentMap[section.type];
           if (!SectionComponent) return null;
