@@ -9,6 +9,8 @@ import {
   CheckCircle2,
   CloudLightning,
   Loader2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { initialMediaFiles } from '../../data/media';
 import { websiteService } from '../../services/websiteService';
@@ -83,28 +85,25 @@ export const AdminMedia = () => {
     setIsUploading(true);
 
     try {
-      const uploadRes = await uploadImageToCloudinary(file);
+      const uploadRes = await uploadImageToCloudinary(file, null, {
+        category: selectedCategory === 'All' ? 'General' : selectedCategory,
+      });
+
       if (uploadRes.success && uploadRes.url) {
-        const newMediaPayload = {
+        const savedDoc = uploadRes.media;
+        const newItem = {
+          id: savedDoc?._id || savedDoc?.id || `media-${Date.now()}`,
           url: uploadRes.url,
           publicId: uploadRes.publicId || '',
           name: file.name,
-          size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-          dimensions: '1920 × 1080',
-          category: selectedCategory === 'All' ? 'Products' : selectedCategory,
-        };
-
-        const backendRes = await websiteService.addMedia(newMediaPayload);
-        const savedId = backendRes.data?._id || `media-${Date.now()}`;
-
-        const newItem = {
-          id: savedId,
-          ...newMediaPayload,
+          size: savedDoc?.size || `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+          dimensions: savedDoc?.dimensions || '1920 × 1080',
+          category: selectedCategory === 'All' ? 'General' : selectedCategory,
           uploadedAt: 'Just now',
         };
 
         setMediaList((prev) => [newItem, ...prev]);
-        showToast(`Uploaded "${file.name}" to media library!`);
+        showToast(`Stored in Cloudinary and saved to MongoDB!`);
       } else {
         showToast(uploadRes.error || 'Failed to upload image.');
       }
@@ -241,10 +240,17 @@ export const AdminMedia = () => {
                   loading="lazy"
                 />
 
-                {/* Category Badge */}
-                <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold">
-                  {item.category}
-                </span>
+                {/* Category Badge & Cloudinary Badge */}
+                <div className="absolute top-2.5 left-2.5 flex items-center gap-1">
+                  <span className="px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold">
+                    {item.category}
+                  </span>
+                  {item.url?.includes('cloudinary.com') && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-indigo-600/90 backdrop-blur-xs text-white text-[9px] font-bold flex items-center gap-0.5">
+                      <CloudLightning size={9} /> CDN
+                    </span>
+                  )}
+                </div>
 
                 {/* Hover Action Overlay */}
                 <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -279,9 +285,17 @@ export const AdminMedia = () => {
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400">
-                    {item.uploadedAt}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(item.url);
+                      showToast('Image URL copied to clipboard!');
+                    }}
+                    className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy size={11} />
+                    <span>Copy URL</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(item.id, item.name)}

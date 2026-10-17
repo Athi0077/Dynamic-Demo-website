@@ -1,4 +1,5 @@
 import { Media } from '../models/Media.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary.js';
 
 /**
  * @desc    Get all media files
@@ -23,6 +24,68 @@ export const getMedia = async (req, res) => {
   } catch (error) {
     console.error('[Media Controller] getMedia error:', error);
     return res.status(500).json({ error: 'Failed to fetch media assets.' });
+  }
+};
+
+/**
+ * @desc    Upload image directly to Cloudinary and save record into MongoDB
+ * @route   POST /api/admin/media/upload
+ * @access  Private (Admin)
+ */
+export const uploadMedia = async (req, res) => {
+  try {
+    const { image, name, category } = req.body;
+
+    if (!image) {
+      return res.status(400).json({ error: 'Image file or data is required.' });
+    }
+
+    // 1. Upload to Cloudinary
+    const cloudRes = await uploadToCloudinary(image, {
+      folder: 'nova_cms',
+    });
+
+    if (!cloudRes.success) {
+      return res.status(500).json({
+        error: cloudRes.error || 'Failed to upload image to Cloudinary.',
+      });
+    }
+
+    // 2. Format size & dimensions
+    const sizeMb = cloudRes.bytes
+      ? `${(cloudRes.bytes / (1024 * 1024)).toFixed(2)} MB`
+      : '1.0 MB';
+
+    const dimensions =
+      cloudRes.width && cloudRes.height
+        ? `${cloudRes.width} × ${cloudRes.height}`
+        : '1920 × 1080';
+
+    // 3. Save metadata into MongoDB
+    const newMedia = new Media({
+      url: cloudRes.url,
+      publicId: cloudRes.publicId,
+      name: name || `Image-${Date.now()}`,
+      size: sizeMb,
+      dimensions: dimensions,
+      category: category || 'General',
+      uploadedBy: req.admin?._id,
+    });
+
+    const savedMedia = await newMedia.save();
+
+    return res.status(201).json({
+      success: true,
+      message: 'Image stored in Cloudinary and saved to MongoDB.',
+      url: savedMedia.url,
+      publicId: savedMedia.publicId,
+      media: savedMedia,
+    });
+  } catch (error) {
+    console.error('[Media Controller] uploadMedia error:', error);
+    return res.status(500).json({
+      error: error.message || 'Failed to process image upload.',
+    });
   }
 };
 
@@ -58,7 +121,7 @@ export const addMedia = async (req, res) => {
 };
 
 /**
- * @desc    Delete media record
+ * @desc    Delete media record from MongoDB and Cloudinary
  * @route   DELETE /api/admin/media/:id
  * @access  Private (Admin)
  */
@@ -68,6 +131,11 @@ export const deleteMedia = async (req, res) => {
 
     if (!media) {
       return res.status(404).json({ error: 'Media file not found.' });
+    }
+
+    // Also remove file from Cloudinary CDN if publicId is stored
+    if (media.publicId) {
+      await deleteFromCloudinary(media.publicId);
     }
 
     await Media.findByIdAndDelete(req.params.id);

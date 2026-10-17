@@ -180,6 +180,14 @@ export const websiteService = {
   },
 
   /**
+   * Upload image through backend to Cloudinary and automatically save record to MongoDB
+   */
+  async uploadMedia(uploadPayload) {
+    const res = await api.post('/admin/media/upload', uploadPayload);
+    return res;
+  },
+
+  /**
    * Save newly uploaded image metadata to backend
    */
   async addMedia(mediaData) {

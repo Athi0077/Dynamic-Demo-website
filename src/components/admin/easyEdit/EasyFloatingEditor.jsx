@@ -13,10 +13,13 @@ import {
   ArrowDown,
   UploadCloud,
   Save,
+  FolderOpen,
+  CloudLightning,
 } from 'lucide-react';
 import { useWebsite } from '../../../context/WebsiteContext';
 import { uploadImageToCloudinary, validateImageFile } from '../../../utils/cloudinary';
 import { ColorPicker } from '../editor/controls/ColorPicker';
+import { MediaPickerModal } from '../editor/controls/MediaPickerModal';
 
 export const EasyFloatingEditor = ({
   section,
@@ -41,6 +44,7 @@ export const EasyFloatingEditor = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [directImageUrl, setDirectImageUrl] = useState('');
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   if (!section) return null;
 
@@ -53,6 +57,14 @@ export const EasyFloatingEditor = ({
 
   const handleSettingsUpdate = (fields) => {
     updateSectionSettings(section.id, fields);
+  };
+
+  const applyImageChange = (url) => {
+    if (content.bannerImage !== undefined) {
+      handleContentUpdate({ bannerImage: url });
+    } else {
+      handleContentUpdate({ image: url });
+    }
   };
 
   // Move container up
@@ -89,9 +101,11 @@ export const EasyFloatingEditor = ({
 
     setIsUploading(true);
     try {
-      const res = await uploadImageToCloudinary(file);
+      const res = await uploadImageToCloudinary(file, null, {
+        category: section.type === 'hero' ? 'Hero' : section.type === 'offer-banner' ? 'Banners' : 'General',
+      });
       if (res.success && res.url) {
-        handleContentUpdate({ image: res.url });
+        applyImageChange(res.url);
       } else {
         setUploadError(res.error || 'Failed to upload image.');
       }
@@ -105,9 +119,13 @@ export const EasyFloatingEditor = ({
   const handleApplyDirectUrl = (e) => {
     e.preventDefault();
     if (directImageUrl.trim()) {
-      handleContentUpdate({ image: directImageUrl.trim() });
+      applyImageChange(directImageUrl.trim());
       setDirectImageUrl('');
     }
+  };
+
+  const handleSelectFromLibrary = (url) => {
+    applyImageChange(url);
   };
 
   const hasImage = Boolean(
@@ -525,11 +543,11 @@ export const EasyFloatingEditor = ({
               </p>
             )}
 
-            {/* Upload Button */}
-            <div>
-              <label className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer">
-                <Upload size={14} />
-                <span>Upload From Computer (JPG, PNG max 5MB)</span>
+            {/* Upload & Library Action Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer text-center">
+                <Upload size={13} />
+                <span>Upload File</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -537,6 +555,15 @@ export const EasyFloatingEditor = ({
                   className="hidden"
                 />
               </label>
+
+              <button
+                type="button"
+                onClick={() => setIsPickerOpen(true)}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                <FolderOpen size={13} />
+                <span>Media Library</span>
+              </button>
             </div>
 
             {/* Or Paste Direct URL */}
@@ -550,11 +577,16 @@ export const EasyFloatingEditor = ({
               />
               <button
                 type="submit"
-                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 Apply
               </button>
             </form>
+
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-1">
+              <CloudLightning size={12} className="text-indigo-500 shrink-0" />
+              <span>Cloudinary CDN & MongoDB Auto-Sync Active</span>
+            </div>
           </div>
         )}
       </div>
@@ -612,6 +644,14 @@ export const EasyFloatingEditor = ({
           </button>
         </div>
       </div>
+
+      {/* Media Library Picker Modal */}
+      <MediaPickerModal
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        onSelectImage={handleSelectFromLibrary}
+        currentImage={content.image || content.bannerImage}
+      />
     </div>
   );
 };

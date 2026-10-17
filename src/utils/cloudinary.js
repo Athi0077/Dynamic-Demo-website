@@ -1,6 +1,8 @@
 // Cloudinary Image Upload Utility
-// Supports secure client-side unsigned uploads using environment variables
+// Uploads via backend directly to Cloudinary and automatically persists to MongoDB Media collection
 // Validates file formats (JPG, JPEG, PNG, WEBP) and maximum file size (5 MB)
+
+import { api } from '../services/api';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -40,89 +42,79 @@ export const validateImageFile = (file) => {
 };
 
 /**
- * Uploads an image to Cloudinary (or falls back to local data URL if env is not configured)
+ * Reads a File object into a base64 Data URL
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+const readFileAsBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Failed to read image file.'));
+    reader.readAsDataURL(file);
+  });
+};
+
+/**
+ * Uploads an image to Cloudinary & saves record to MongoDB
  * @param {File} file
  * @param {function} [onProgress]
- * @returns {Promise<{ success: boolean, url?: string, publicId?: string, isLocal?: boolean, error?: string }>}
+ * @param {object} [metadata]
+ * @returns {Promise<{ success: boolean, url?: string, publicId?: string, media?: object, isLocal?: boolean, error?: string }>}
  */
-export const uploadImageToCloudinary = async (file, onProgress) => {
-  // Run validation first
+export const uploadImageToCloudinary = async (file, onProgress, metadata = {}) => {
+  // 1. Run client-side validation
   const validation = validateImageFile(file);
   if (!validation.valid) {
     return { success: false, error: validation.error };
   }
 
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  if (onProgress) onProgress(20);
 
-  // If Cloudinary environment variables are available, perform direct unsigned upload
-  if (cloudName && uploadPreset) {
-    try {
-      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', uploadPreset);
+  try {
+    // 2. Convert file to Base64
+    const base64Data = await readFileAsBase64(file);
+    if (onProgress) onProgress(45);
 
-      if (onProgress) onProgress(30);
+    // 3. Post to backend which uploads to Cloudinary and saves into MongoDB
+    const response = await api.post('/admin/media/upload', {
+      image: base64Data,
+      name: file.name,
+      category: metadata.category || 'General',
+    });
 
-      const response = await fetch(url, {
-        method: 'POST',
-        body: formData,
-      });
+    if (onProgress) onProgress(90);
 
-      if (onProgress) onProgress(80);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error?.message || `Cloudinary upload failed with status ${response.status}`
-        );
-      }
-
-      const data = await response.json();
+    if (response.success && response.data?.url) {
       if (onProgress) onProgress(100);
-
       return {
         success: true,
-        url: data.secure_url || data.url,
-        publicId: data.public_id,
-        format: data.format,
-        size: data.bytes,
+        url: response.data.url,
+        publicId: response.data.publicId,
+        media: response.data.media,
         isLocal: false,
-      };
-    } catch (err) {
-      console.warn('Cloudinary upload error:', err.message);
-      return {
-        success: false,
-        error: `Cloudinary upload failed: ${err.message}`,
+        message: 'Stored in Cloudinary and saved to MongoDB.',
       };
     }
-  }
 
-  // Fallback: If Cloudinary keys are not set yet, convert to base64 Data URL
-  // so the user can test the editor and preview immediately without blocking
-  return new Promise((resolve) => {
-    if (onProgress) onProgress(50);
-    const reader = new FileReader();
-
-    reader.onload = () => {
+    // If offline fallback mode or error
+    if (response.isOffline) {
       if (onProgress) onProgress(100);
-      resolve({
+      return {
         success: true,
-        url: reader.result,
+        url: base64Data,
         publicId: `local-${Date.now()}`,
         isLocal: true,
-        notice: 'Using local storage. Set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in .env for Cloudinary CDN hosting.',
-      });
-    };
+        notice: 'Backend offline: Using local preview.',
+      };
+    }
 
-    reader.onerror = () => {
-      resolve({
-        success: false,
-        error: 'Failed to read image file locally.',
-      });
+    throw new Error(response.error || 'Failed to upload image.');
+  } catch (err) {
+    console.warn('[Upload Error]:', err.message);
+    return {
+      success: false,
+      error: err.message || 'Image upload failed.',
     };
-
-    reader.readAsDataURL(file);
-  });
+  }
 };
