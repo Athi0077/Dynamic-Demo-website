@@ -57,7 +57,7 @@ export const Hero = ({ config = siteConfig.hero }) => {
             <h1
               style={{
                 color: textColor || undefined,
-                fontSize: headingFontSize ? `${headingFontSize}px` : undefined,
+                fontSize: headingFontSize ? `clamp(1.75rem, 5vw, ${headingFontSize}px)` : undefined,
               }}
               className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]"
             >

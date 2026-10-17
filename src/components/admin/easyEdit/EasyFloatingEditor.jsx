@@ -15,6 +15,15 @@ import {
   Save,
   FolderOpen,
   CloudLightning,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  PanelRightClose,
+  PanelRightOpen,
+  Maximize2,
+  Minimize2,
+  MoveHorizontal,
 } from 'lucide-react';
 import { useWebsite } from '../../../context/WebsiteContext';
 import { uploadImageToCloudinary, validateImageFile } from '../../../utils/cloudinary';
@@ -45,6 +54,12 @@ export const EasyFloatingEditor = ({
   const [uploadError, setUploadError] = useState('');
   const [directImageUrl, setDirectImageUrl] = useState('');
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+
+  // Advanced viewport & view management states
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isDocked, setIsDocked] = useState(false); // Docked to right side like Shopify theme editor
+  const [floatPosition, setFloatPosition] = useState('right'); // 'right' | 'left'
+  const [isPeeking, setIsPeeking] = useState(false); // Makes modal transparent so user can see under it
 
   if (!section) return null;
 
@@ -102,7 +117,12 @@ export const EasyFloatingEditor = ({
     setIsUploading(true);
     try {
       const res = await uploadImageToCloudinary(file, null, {
-        category: section.type === 'hero' ? 'Hero' : section.type === 'offer-banner' ? 'Banners' : 'General',
+        category:
+          section.type === 'hero'
+            ? 'Hero'
+            : section.type === 'offer-banner'
+            ? 'Banners'
+            : 'General',
       });
       if (res.success && res.url) {
         applyImageChange(res.url);
@@ -134,525 +154,587 @@ export const EasyFloatingEditor = ({
     section.type === 'hero' ||
     section.type === 'image-text' ||
     section.type === 'offer-banner' ||
-    section.type === 'image'
+    section.type === 'image' ||
+    section.type === 'gallery'
   );
 
-  return (
-    <div className="fixed bottom-6 right-6 z-50 w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-bottom duration-200">
-      {/* Editor Modal Header */}
-      <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+  // 1. MINIMIZED FLOATING PILL (Allows user to inspect 100% of the live website)
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl px-4 py-2.5 flex items-center gap-3 border border-slate-700/80 max-w-[95vw] animate-in slide-in-from-bottom-3 duration-200">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-            <Sparkles size={14} />
-          </div>
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse shrink-0" />
           <div className="min-w-0">
-            <h3 className="text-sm font-extrabold text-white truncate">
+            <span className="text-xs font-extrabold truncate block max-w-[130px] sm:max-w-[200px]">
               {section.name}
-            </h3>
-            <p className="text-[10px] text-slate-400 capitalize">
-              Easy Editor • Section #{index + 1}
-            </p>
+            </span>
+            <span className="text-[10px] text-slate-400 block truncate">
+              {content.headline || content.title || 'Editing section...'}
+            </span>
           </div>
         </div>
 
-        {/* Header Controls: Reorder Up/Down, Reset, Close */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-slate-700">
           <button
             type="button"
-            disabled={index === 0}
-            onClick={handleMoveUp}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors cursor-pointer"
-            title="Move container up"
+            onClick={() => setIsMinimized(false)}
+            className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
-            <ArrowUp size={13} />
+            <Maximize2 size={12} />
+            <span>Open Editor</span>
           </button>
-
-          <button
-            type="button"
-            disabled={index === totalSections - 1}
-            onClick={handleMoveDown}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:hover:bg-slate-800 transition-colors cursor-pointer"
-            title="Move container down"
-          >
-            <ArrowDown size={13} />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => resetSectionToTemplate(section.id)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-            title="Reset to template defaults"
-          >
-            <RotateCcw size={13} />
-          </button>
-
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white transition-colors cursor-pointer ml-1"
+            className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
             title="Close editor"
           >
             <X size={15} />
           </button>
         </div>
       </div>
+    );
+  }
 
-      {/* Navigation Tabs: Text / Style / Image */}
-      <div className="flex bg-slate-100 p-1 border-b border-slate-200">
-        <button
-          type="button"
-          onClick={() => setActiveTab('text')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'text'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <Type size={14} />
-          <span>Texts</span>
-        </button>
+  // CONTAINER STYLES: DOCKED VS FLOATING
+  const containerClasses = isDocked
+    ? 'fixed top-[49px] right-0 bottom-0 z-40 w-full sm:w-[420px] bg-white border-l border-slate-200/90 shadow-2xl flex flex-col h-[calc(100vh-49px)] animate-in slide-in-from-right duration-200'
+    : `fixed bottom-3 sm:bottom-6 ${
+        floatPosition === 'right' ? 'right-2 sm:right-6' : 'left-2 sm:left-6'
+      } z-40 w-[calc(100vw-1rem)] sm:w-[410px] bg-white/98 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col max-h-[75vh] sm:max-h-[82vh] animate-in slide-in-from-bottom-2 duration-200`;
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('style')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'style'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-500 hover:text-slate-900'
-          }`}
-        >
-          <Palette size={14} />
-          <span>Colors & Style</span>
-        </button>
-
-        {hasImage && (
-          <button
-            type="button"
-            onClick={() => setActiveTab('image')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'image'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            <ImageIcon size={14} />
-            <span>Image</span>
-          </button>
-        )}
-      </div>
-
-      {/* Tab Body Content */}
-      <div className="p-5 overflow-y-auto space-y-4 flex-1">
-        {/* TAB 1: TEXTS & CONTENT */}
-        {activeTab === 'text' && (
-          <div className="space-y-4">
-            {/* Badge Text (if applicable) */}
-            {content.badge !== undefined && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Top Badge / Eyebrow Text
-                </label>
-                <input
-                  type="text"
-                  value={content.badge || ''}
-                  onChange={(e) => handleContentUpdate({ badge: e.target.value })}
-                  placeholder="e.g. New Season 2026 Collection"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500"
-                />
-              </div>
-            )}
-
-            {/* Headline / Title */}
-            {(content.headline !== undefined || content.title !== undefined) && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Main Headline / Title
-                </label>
-                <input
-                  type="text"
-                  value={content.headline !== undefined ? content.headline : (content.title || '')}
-                  onChange={(e) =>
-                    content.headline !== undefined
-                      ? handleContentUpdate({ headline: e.target.value })
-                      : handleContentUpdate({ title: e.target.value })
-                  }
-                  placeholder="Enter section headline..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:border-indigo-500"
-                />
-              </div>
-            )}
-
-            {/* Description / Subtitle */}
-            {(content.description !== undefined || content.subtitle !== undefined) && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Description / Subtitle
-                </label>
-                <textarea
-                  rows={3}
-                  value={content.description !== undefined ? content.description : (content.subtitle || '')}
-                  onChange={(e) =>
-                    content.description !== undefined
-                      ? handleContentUpdate({ description: e.target.value })
-                      : handleContentUpdate({ subtitle: e.target.value })
-                  }
-                  placeholder="Enter supporting paragraph text..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-hidden focus:border-indigo-500 resize-none"
-                />
-              </div>
-            )}
-
-            {/* Primary CTA Button Text & Link */}
-            {content.primaryCta && (
-              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Button Text
-                  </label>
-                  <input
-                    type="text"
-                    value={content.primaryCta.text || ''}
-                    onChange={(e) =>
-                      handleContentUpdate({
-                        primaryCta: { ...content.primaryCta, text: e.target.value },
-                      })
-                    }
-                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Button Link
-                  </label>
-                  <input
-                    type="text"
-                    value={content.primaryCta.href || ''}
-                    onChange={(e) =>
-                      handleContentUpdate({
-                        primaryCta: { ...content.primaryCta, href: e.target.value },
-                      })
-                    }
-                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* General Button Text & Link (Image+Text, Offer Banner, CTA) */}
-            {content.buttonText !== undefined && (
-              <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Button Text
-                  </label>
-                  <input
-                    type="text"
-                    value={content.buttonText || ''}
-                    onChange={(e) => handleContentUpdate({ buttonText: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Button Link
-                  </label>
-                  <input
-                    type="text"
-                    value={content.buttonLink || ''}
-                    onChange={(e) => handleContentUpdate({ buttonLink: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Offer Banner Coupon Code */}
-            {content.codeBadge !== undefined && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Coupon / Promo Code
-                </label>
-                <input
-                  type="text"
-                  value={content.codeBadge || ''}
-                  onChange={(e) => handleContentUpdate({ codeBadge: e.target.value })}
-                  placeholder="e.g. CODE: NOVA40"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-indigo-700"
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 2: COLORS, FONT SIZES & SPACING */}
-        {activeTab === 'style' && (
-          <div className="space-y-4">
-            {/* Background Color & Text Color Pickers */}
-            <div className="grid grid-cols-2 gap-3">
-              <ColorPicker
-                label="Background"
-                color={settings.backgroundColor || '#ffffff'}
-                onChange={(c) => handleSettingsUpdate({ backgroundColor: c })}
-              />
-
-              <ColorPicker
-                label="Text Color"
-                color={settings.textColor || '#0f172a'}
-                onChange={(c) => handleSettingsUpdate({ textColor: c })}
-              />
+  return (
+    <>
+      <div
+        className={`${containerClasses} ${
+          isPeeking ? 'opacity-15 hover:opacity-100 transition-opacity' : 'opacity-100'
+        }`}
+      >
+        {/* Editor Modal Header */}
+        <div className="p-3 sm:p-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+              <Sparkles size={13} />
             </div>
-
-            {/* Button Background & Button Text Color */}
-            {(settings.buttonBgColor !== undefined || settings.buttonColor !== undefined) && (
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-                <ColorPicker
-                  label="Button Color"
-                  color={settings.buttonBgColor || settings.buttonColor || '#0f172a'}
-                  onChange={(c) =>
-                    settings.buttonBgColor !== undefined
-                      ? handleSettingsUpdate({ buttonBgColor: c })
-                      : handleSettingsUpdate({ buttonColor: c })
-                  }
-                />
-
-                <ColorPicker
-                  label="Button Text"
-                  color={settings.buttonTextColor || '#ffffff'}
-                  onChange={(c) => handleSettingsUpdate({ buttonTextColor: c })}
-                />
-              </div>
-            )}
-
-            {/* Heading Font Size Slider */}
-            {settings.headingFontSize !== undefined && (
-              <div className="pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
-                  <span>Headline Size</span>
-                  <span className="font-mono text-indigo-600">{settings.headingFontSize}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="24"
-                  max="72"
-                  value={settings.headingFontSize || 48}
-                  onChange={(e) =>
-                    handleSettingsUpdate({ headingFontSize: Number(e.target.value) })
-                  }
-                  className="w-full accent-indigo-600 cursor-pointer"
-                />
-              </div>
-            )}
-
-            {/* Description Font Size Slider */}
-            {settings.descriptionFontSize !== undefined && (
-              <div className="pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
-                  <span>Description Size</span>
-                  <span className="font-mono text-indigo-600">{settings.descriptionFontSize}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="13"
-                  max="22"
-                  value={settings.descriptionFontSize || 16}
-                  onChange={(e) =>
-                    handleSettingsUpdate({ descriptionFontSize: Number(e.target.value) })
-                  }
-                  className="w-full accent-indigo-600 cursor-pointer"
-                />
-              </div>
-            )}
-
-            {/* Vertical Padding / Height Slider */}
-            {settings.sectionHeight !== undefined && (
-              <div className="pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
-                  <span>Section Padding</span>
-                  <span className="font-mono text-indigo-600">{settings.sectionHeight}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="40"
-                  max="160"
-                  step="10"
-                  value={settings.sectionHeight || 100}
-                  onChange={(e) =>
-                    handleSettingsUpdate({ sectionHeight: Number(e.target.value) })
-                  }
-                  className="w-full accent-indigo-600 cursor-pointer"
-                />
-              </div>
-            )}
-
-            {/* Text Alignment */}
-            {settings.alignment !== undefined && (
-              <div className="pt-2 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Text Alignment
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['left', 'center', 'right'].map((align) => (
-                    <button
-                      key={align}
-                      type="button"
-                      onClick={() => handleSettingsUpdate({ alignment: align })}
-                      className={`py-1.5 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${
-                        settings.alignment === align
-                          ? 'bg-slate-900 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      {align}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: IMAGE REPLACEMENT */}
-        {activeTab === 'image' && (
-          <div className="space-y-4">
-            {/* Current Image Preview */}
-            <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner relative group">
-              {content.image || content.bannerImage ? (
-                <img
-                  src={content.image || content.bannerImage}
-                  alt="Section visual"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4">
-                  <ImageIcon size={28} className="mb-1" />
-                  <span className="text-xs">No image set</span>
-                </div>
-              )}
-
-              {isUploading && (
-                <div className="absolute inset-0 bg-slate-900/75 flex flex-col items-center justify-center text-white">
-                  <Loader2 size={24} className="animate-spin text-indigo-400 mb-1" />
-                  <span className="text-xs font-bold">Uploading image...</span>
-                </div>
-              )}
-            </div>
-
-            {uploadError && (
-              <p className="text-xs text-rose-600 bg-rose-50 p-2 rounded-xl">
-                {uploadError}
+            <div className="min-w-0">
+              <h3 className="text-xs sm:text-sm font-extrabold text-white truncate">
+                {section.name}
+              </h3>
+              <p className="text-[10px] text-slate-400 capitalize">
+                Section #{index + 1} • {section.type}
               </p>
-            )}
+            </div>
+          </div>
 
-            {/* Upload & Library Action Buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer text-center">
-                <Upload size={13} />
-                <span>Upload File</span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
+          {/* Header Controls */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Peek Through Button (Temporarily reveals website underneath) */}
+            <button
+              type="button"
+              onClick={() => setIsPeeking(!isPeeking)}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                isPeeking
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+              }`}
+              title={isPeeking ? 'Exit Peek Mode' : 'Peek website underneath'}
+            >
+              {isPeeking ? <EyeOff size={13} /> : <Eye size={13} />}
+            </button>
 
+            {/* Move Left / Right (Floating mode only) */}
+            {!isDocked && (
               <button
                 type="button"
-                onClick={() => setIsPickerOpen(true)}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition-all cursor-pointer"
+                onClick={() => setFloatPosition(floatPosition === 'right' ? 'left' : 'right')}
+                className="hidden sm:inline-flex p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+                title={`Move editor to ${floatPosition === 'right' ? 'left' : 'right'} side`}
               >
-                <FolderOpen size={13} />
-                <span>Media Library</span>
+                <MoveHorizontal size={13} />
               </button>
-            </div>
+            )}
 
-            {/* Or Paste Direct URL */}
-            <form onSubmit={handleApplyDirectUrl} className="flex gap-2 pt-2 border-t border-slate-100">
-              <input
-                type="url"
-                value={directImageUrl}
-                onChange={(e) => setDirectImageUrl(e.target.value)}
-                placeholder="Paste image URL https://..."
-                className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-indigo-500"
-              />
-              <button
-                type="submit"
-                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
-              >
-                Apply
-              </button>
-            </form>
+            {/* Dock to Sidebar Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsDocked(!isDocked)}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                isDocked
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+              }`}
+              title={isDocked ? 'Float editor window' : 'Dock editor to right sidebar'}
+            >
+              {isDocked ? <PanelRightClose size={13} /> : <PanelRightOpen size={13} />}
+            </button>
 
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-1">
-              <CloudLightning size={12} className="text-indigo-500 shrink-0" />
-              <span>Cloudinary CDN & MongoDB Auto-Sync Active</span>
-            </div>
+            {/* Minimize to bottom pill */}
+            <button
+              type="button"
+              onClick={() => setIsMinimized(true)}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+              title="Minimize editor (reveals full view)"
+            >
+              <Minimize2 size={13} />
+            </button>
+
+            {/* Close */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title="Close editor"
+            >
+              <X size={14} />
+            </button>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Footer Actions: Save Draft & Publish */}
-      <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2.5">
-        <div className="text-[11px]">
-          {isSavingDraft ? (
-            <span className="text-indigo-600 font-semibold flex items-center gap-1">
-              <Loader2 size={11} className="animate-spin" />
-              <span>Saving...</span>
-            </span>
-          ) : hasUnsavedChanges ? (
-            <span className="text-amber-600 font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              <span>Auto-saving draft</span>
-            </span>
-          ) : (
-            <span className="text-emerald-600 font-semibold flex items-center gap-1">
-              <Check size={12} />
-              <span>Draft saved</span>
-            </span>
+        {/* Editor Navigation Tabs */}
+        <div className="flex items-center border-b border-slate-200 bg-slate-50/90 p-1.5 gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab('text')}
+            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'text'
+                ? 'bg-white text-indigo-600 shadow-2xs font-extrabold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Type size={13} />
+            <span>Texts</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('style')}
+            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'style'
+                ? 'bg-white text-indigo-600 shadow-2xs font-extrabold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Palette size={13} />
+            <span>Colors & Style</span>
+          </button>
+
+          {hasImage && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('image')}
+              className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === 'image'
+                  ? 'bg-white text-indigo-600 shadow-2xs font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ImageIcon size={13} />
+              <span>Image</span>
+            </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => saveDraft(false)}
-            disabled={isSavingDraft}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
-            title="Save draft to MongoDB"
-          >
-            <Save size={13} />
-            <span>Save Draft</span>
-          </button>
+        {/* Tab Body Content */}
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+          {/* TAB 1: TEXTS & CONTENT */}
+          {activeTab === 'text' && (
+            <div className="space-y-3.5">
+              {/* Badge Text (if applicable) */}
+              {content.badge !== undefined && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Top Badge / Eyebrow Text
+                  </label>
+                  <input
+                    type="text"
+                    value={content.badge || ''}
+                    onChange={(e) => handleContentUpdate({ badge: e.target.value })}
+                    placeholder="e.g. New Season 2026 Collection"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                  />
+                </div>
+              )}
 
-          <button
-            type="button"
-            onClick={publishWebsite}
-            disabled={isPublishing}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
-            title="Publish changes live"
-          >
-            <UploadCloud size={13} />
-            <span>Publish</span>
-          </button>
+              {/* Headline / Title */}
+              {(content.headline !== undefined || content.title !== undefined) && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Main Headline / Title
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      content.headline !== undefined
+                        ? content.headline
+                        : content.title || ''
+                    }
+                    onChange={(e) =>
+                      content.headline !== undefined
+                        ? handleContentUpdate({ headline: e.target.value })
+                        : handleContentUpdate({ title: e.target.value })
+                    }
+                    placeholder="Enter section headline..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:border-indigo-500"
+                  />
+                </div>
+              )}
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
-          >
-            Done
-          </button>
+              {/* Description / Subtitle */}
+              {(content.description !== undefined || content.subtitle !== undefined) && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Description / Subtitle
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={
+                      content.description !== undefined
+                        ? content.description
+                        : content.subtitle || ''
+                    }
+                    onChange={(e) =>
+                      content.description !== undefined
+                        ? handleContentUpdate({ description: e.target.value })
+                        : handleContentUpdate({ subtitle: e.target.value })
+                    }
+                    placeholder="Enter supporting paragraph text..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-hidden focus:border-indigo-500 resize-none"
+                  />
+                </div>
+              )}
+
+              {/* Primary CTA Button Text & Link */}
+              {content.primaryCta && (
+                <div className="grid grid-cols-2 gap-2.5 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      Button Text
+                    </label>
+                    <input
+                      type="text"
+                      value={content.primaryCta.text || ''}
+                      onChange={(e) =>
+                        handleContentUpdate({
+                          primaryCta: { ...content.primaryCta, text: e.target.value },
+                        })
+                      }
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      Button Link
+                    </label>
+                    <input
+                      type="text"
+                      value={content.primaryCta.href || ''}
+                      onChange={(e) =>
+                        handleContentUpdate({
+                          primaryCta: { ...content.primaryCta, href: e.target.value },
+                        })
+                      }
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Simple Button Text & Link */}
+              {content.buttonText !== undefined && (
+                <div className="grid grid-cols-2 gap-2.5 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      Button Text
+                    </label>
+                    <input
+                      type="text"
+                      value={content.buttonText || ''}
+                      onChange={(e) => handleContentUpdate({ buttonText: e.target.value })}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                      Button Link
+                    </label>
+                    <input
+                      type="text"
+                      value={content.buttonLink || ''}
+                      onChange={(e) => handleContentUpdate({ buttonLink: e.target.value })}
+                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Offer Banner Coupon Code */}
+              {content.codeBadge !== undefined && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Coupon / Promo Code
+                  </label>
+                  <input
+                    type="text"
+                    value={content.codeBadge || ''}
+                    onChange={(e) => handleContentUpdate({ codeBadge: e.target.value })}
+                    placeholder="e.g. CODE: NOVA40"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-indigo-700"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: COLORS, FONT SIZES & SPACING */}
+          {activeTab === 'style' && (
+            <div className="space-y-4">
+              {/* Background Color & Text Color Pickers */}
+              <div className="grid grid-cols-2 gap-3">
+                <ColorPicker
+                  label="Background"
+                  color={settings.backgroundColor || '#ffffff'}
+                  onChange={(c) => handleSettingsUpdate({ backgroundColor: c })}
+                />
+
+                <ColorPicker
+                  label="Text Color"
+                  color={settings.textColor || '#0f172a'}
+                  onChange={(c) => handleSettingsUpdate({ textColor: c })}
+                />
+              </div>
+
+              {/* Button Background & Button Text Color */}
+              {(settings.buttonBgColor !== undefined || settings.buttonColor !== undefined) && (
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                  <ColorPicker
+                    label="Button Color"
+                    color={settings.buttonBgColor || settings.buttonColor || '#0f172a'}
+                    onChange={(c) =>
+                      settings.buttonBgColor !== undefined
+                        ? handleSettingsUpdate({ buttonBgColor: c })
+                        : handleSettingsUpdate({ buttonColor: c })
+                    }
+                  />
+
+                  <ColorPicker
+                    label="Button Text"
+                    color={settings.buttonTextColor || '#ffffff'}
+                    onChange={(c) => handleSettingsUpdate({ buttonTextColor: c })}
+                  />
+                </div>
+              )}
+
+              {/* Heading Font Size Slider */}
+              {settings.headingFontSize !== undefined && (
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+                    <span>Headline Size</span>
+                    <span className="font-mono text-indigo-600">{settings.headingFontSize}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="24"
+                    max="72"
+                    value={settings.headingFontSize || 48}
+                    onChange={(e) =>
+                      handleSettingsUpdate({ headingFontSize: Number(e.target.value) })
+                    }
+                    className="w-full accent-indigo-600 cursor-pointer"
+                  />
+                </div>
+              )}
+
+              {/* Section Padding / Height Slider */}
+              {settings.sectionHeight !== undefined && (
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+                    <span>Vertical Spacing</span>
+                    <span className="font-mono text-indigo-600">{settings.sectionHeight}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="40"
+                    max="180"
+                    step="10"
+                    value={settings.sectionHeight || 100}
+                    onChange={(e) =>
+                      handleSettingsUpdate({ sectionHeight: Number(e.target.value) })
+                    }
+                    className="w-full accent-indigo-600 cursor-pointer"
+                  />
+                </div>
+              )}
+
+              {/* Text Alignment */}
+              {settings.alignment !== undefined && (
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Text Alignment
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['left', 'center', 'right'].map((align) => (
+                      <button
+                        key={align}
+                        type="button"
+                        onClick={() => handleSettingsUpdate({ alignment: align })}
+                        className={`py-1.5 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${
+                          settings.alignment === align
+                            ? 'bg-slate-900 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {align}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: IMAGE REPLACEMENT */}
+          {activeTab === 'image' && (
+            <div className="space-y-4">
+              {/* Current Image Preview */}
+              <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner relative group">
+                {content.image || content.bannerImage ? (
+                  <img
+                    src={content.image || content.bannerImage}
+                    alt="Section visual"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4">
+                    <ImageIcon size={28} className="mb-1" />
+                    <span className="text-xs">No image set</span>
+                  </div>
+                )}
+
+                {isUploading && (
+                  <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xs flex flex-col items-center justify-center text-white z-10">
+                    <Loader2 size={24} className="animate-spin text-indigo-400 mb-1" />
+                    <span className="text-xs font-bold">Uploading to Cloudinary & MongoDB...</span>
+                  </div>
+                )}
+              </div>
+
+              {uploadError && (
+                <p className="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                  {uploadError}
+                </p>
+              )}
+
+              {/* Upload & Library Action Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer text-center">
+                  <Upload size={13} />
+                  <span>Upload File</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPickerOpen(true)}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <FolderOpen size={13} />
+                  <span>Media Library</span>
+                </button>
+              </div>
+
+              {/* Or Paste Direct URL */}
+              <form onSubmit={handleApplyDirectUrl} className="flex gap-2 pt-2 border-t border-slate-100">
+                <input
+                  type="url"
+                  value={directImageUrl}
+                  onChange={(e) => setDirectImageUrl(e.target.value)}
+                  placeholder="Paste image URL https://..."
+                  className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-indigo-500"
+                />
+                <button
+                  type="submit"
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Apply
+                </button>
+              </form>
+
+              <div className="flex items-center gap-1.5 text-[10px] text-slate-400 pt-1">
+                <CloudLightning size={12} className="text-indigo-500 shrink-0" />
+                <span>Cloudinary CDN & MongoDB Auto-Sync Active</span>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Media Library Picker Modal */}
-      <MediaPickerModal
-        isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        onSelectImage={handleSelectFromLibrary}
-        currentImage={content.image || content.bannerImage}
-      />
-    </div>
+        {/* Editor Modal Footer */}
+        <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
+          <div>
+            {isSavingDraft ? (
+              <span className="text-indigo-600 font-semibold flex items-center gap-1">
+                <Loader2 size={11} className="animate-spin" />
+                <span>Saving...</span>
+              </span>
+            ) : hasUnsavedChanges ? (
+              <span className="text-amber-600 font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span>Auto-saving</span>
+              </span>
+            ) : (
+              <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                <Check size={12} />
+                <span>Saved</span>
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => saveDraft(false)}
+              disabled={isSavingDraft}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+              title="Save draft to MongoDB"
+            >
+              <Save size={12} />
+              <span>Save</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={publishWebsite}
+              disabled={isPublishing}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+              title="Publish changes live"
+            >
+              <UploadCloud size={12} />
+              <span>Publish</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+
+        {/* Media Library Picker Modal */}
+        <MediaPickerModal
+          isOpen={isPickerOpen}
+          onClose={() => setIsPickerOpen(false)}
+          onSelectImage={handleSelectFromLibrary}
+          currentImage={content.image || content.bannerImage}
+        />
+      </div>
+    </>
   );
 };
 

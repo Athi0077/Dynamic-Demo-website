@@ -111,7 +111,9 @@ export const EasySectionWrapper = ({
 
       {/* Container Top Edge Action Bar (Visible on Hover or when Selected) */}
       <div
-        className={`absolute -top-5 left-1/2 -translate-x-1/2 z-40 transition-all duration-200 flex items-center gap-1.5 bg-slate-900 text-white px-3 py-1.5 rounded-2xl shadow-2xl border border-slate-700/80 ${
+        className={`absolute ${
+          index === 0 ? 'top-2' : '-top-4 sm:-top-5'
+        } left-1/2 -translate-x-1/2 z-40 transition-all duration-200 flex items-center gap-1 sm:gap-1.5 bg-slate-900/95 backdrop-blur-md text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-2xl shadow-2xl border border-slate-700/80 max-w-[95vw] ${
           isSelected || isHovered
             ? 'opacity-100 scale-100 pointer-events-auto'
             : 'opacity-0 scale-95 pointer-events-none'
@@ -119,8 +121,8 @@ export const EasySectionWrapper = ({
       >
         {/* Section Title Pill */}
         <div className="flex items-center gap-1.5 pr-2 border-r border-slate-700 text-xs font-bold">
-          <Sparkles size={13} className="text-indigo-400" />
-          <span className="text-white max-w-[140px] truncate">{section.name}</span>
+          <Sparkles size={12} className="text-indigo-400 shrink-0" />
+          <span className="text-white max-w-[90px] sm:max-w-[140px] truncate">{section.name}</span>
           <span className="text-[10px] text-slate-400 font-mono">#{index + 1}</span>
         </div>
 
@@ -132,11 +134,11 @@ export const EasySectionWrapper = ({
             onSelect(section.id);
             onOpenEditor(section.id);
           }}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition-all shadow-sm shadow-indigo-600/30 cursor-pointer active:scale-95"
+          className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition-all shadow-sm shadow-indigo-600/30 cursor-pointer active:scale-95"
           title="Click to edit text, colors, font sizes, spacing, and image"
         >
-          <Edit3 size={13} />
-          <span>Edit Container</span>
+          <Edit3 size={12} />
+          <span>Edit</span>
         </button>
 
         {/* Reordering: Move Up (▲) */}
